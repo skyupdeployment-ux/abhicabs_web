@@ -10,8 +10,8 @@
 # are served by index.html so Vike's client-side router handles them.
 [[redirects]]
   from = "/*"
-  to = "/index.html"
-  status = 200
+  to = "/404.html"
+  status = 404
 
 # Cache static assets aggressively (Vite hashed filenames)
 [[headers]]
