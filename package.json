@@ -6,8 +6,8 @@
   "scripts": {
     "start": "vike dev",
     "dev": "vike dev",
-    "build": "node scripts/generate-sitemap.js && vike build",
-    "sitemap": "node scripts/generate-sitemap.js",
+    "build": "node scripts/generate-sitemap.cjs && vike build",
+    "sitemap": "node scripts/generate-sitemap.cjs",
     "preview": "vike preview"
   },
   "dependencies": {
