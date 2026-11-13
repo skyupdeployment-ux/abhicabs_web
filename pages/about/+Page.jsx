@@ -11,7 +11,7 @@ import CTASection from "../../src/components/CTASection";
 const GOLD = "#E6AC00";
 const GOLDF = "#FFD54F";
 
-/* ── Text swap: cycles gold phrases ── */
+
 function TextSwap({ texts, interval = 2800 }) {
   const [index, setIndex] = useState(0);
   useEffect(() => {
