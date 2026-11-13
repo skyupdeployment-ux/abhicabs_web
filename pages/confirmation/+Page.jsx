@@ -1,0 +1,172 @@
+import { realEmailOrEmpty } from "../../src/lib/guestContact";
+import VehicleHero from "../../src/components/VehicleHero";
+import { formatDateTime } from "../../src/lib/dateTime";
+import React from "react";
+import { usePageContext } from "vike-react/usePageContext";
+import { fmtINR, shortAddress } from "../../src/data/mockData";
+import useVehicleLookup from "../../src/hooks/useVehicleLookup";
+import { useToast } from "../../src/hooks/useToast";
+import useBookingLookup from "../../src/hooks/useBookingLookup";
+import StateBlock from "../../src/components/StateBlock";
+import Button from "../../src/components/ui/Button";
+import { IconPin } from "../../src/components/Icons";
+import BookingInvoiceModal from "../../src/components/BookingInvoiceModal";
+
+// Rebuilt to match the reference exactly: car icon banner (not a checkmark),
+// "Booking Confirmed" title, and a 2-row/3-column detail grid (Route/Date &
+// Time/Seats·AC, then Passengers/Driver/Total Paid).
+//
+// NOTE on "Booking Confirmed": earlier this said "Booking Received!" with
+// "We're finding a driver" specifically because claiming a driver is
+// assigned would be false at this exact moment. "Booking Confirmed" is
+// still accurate — the RESERVATION itself is confirmed the moment payment/
+// booking creation succeeds — and the new "Driver" field states the real
+// assignment policy ("Assigned 2 hrs before pickup") rather than claiming
+// one is assigned already, so this isn't reintroducing that inaccuracy.
+export default function Page() {
+  const lookupVehicle = useVehicleLookup();
+  const pageContext = usePageContext();
+  const bookingId = pageContext.urlParsed?.search?.b || null;
+  const toast = useToast();
+  const { booking, loading } = useBookingLookup(bookingId);
+  // Must stay ABOVE the early returns below — a hook called conditionally
+  // (after an early return) breaks the Rules of Hooks and crashes the page.
+  const [showInvoice, setShowInvoice] = React.useState(false);
+
+  if (loading) {
+    return <p style={{ textAlign: "center", padding: "64px 0", color: "#666" }}>Loading your booking…</p>;
+  }
+
+  if (!booking) {
+    return (
+      <section style={{ padding: "56px 0" }}>
+        <div style={{ maxWidth: 520, margin: "0 auto", padding: "0 22px" }}>
+          <StateBlock tone="empty" icon={<IconPin className="w-6.5 h-6.5" />}
+            title="Booking not found"
+            description="We couldn't find that booking. It may have been cancelled, or the link may be incorrect."
+            action={<Button href="/#booking">Book a Cab</Button>}
+          />
+        </div>
+      </section>
+    );
+  }
+
+  // True for all GST cases (business GSTIN, personal GST without GSTIN, or any
+  // booking carrying a GSTIN). A personal GST opt-in keeps customerType
+  // "retail" on the server, so gstInvoice is the reliable signal; customerType
+  // is the fallback for a just-placed local booking.
+  const isTaxInvoice = Boolean(
+    booking.gstInvoice ||
+    booking.customerType === "corporate" ||
+    String(booking.gstNumber || "").trim()
+  );
+
+  return (
+    <main className="page-main" style={{ maxWidth: 720, margin: "0 auto", padding: "40px 22px 70px" }}>
+      <div style={{ textAlign: "center", marginBottom: 28 }}>
+        <div style={{ width: 82, height: 82, margin: "0 auto 20px", borderRadius: "50%", background: "#e7f6ed", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <svg width="42" height="42" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" fill="#1a8a4a" />
+            <path d="M7.5 12.5l3 3 6-6.5" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+        <h1 style={{ fontWeight: 800, fontSize: "clamp(24px,3vw,34px)", margin: "0 0 6px", letterSpacing: "-.02em" }}>Booking Confirmed</h1>
+        <p style={{ fontSize: 14.5, color: "#666", margin: 0 }}>
+          Booking ID <span style={{ fontWeight: 700, color: "#111" }}>{booking.bookingId}</span>
+        </p>
+
+        {isTaxInvoice && (
+          <div style={{
+            display: "inline-block", marginTop: 12, padding: "6px 14px", borderRadius: 9999, fontSize: 12.5, fontWeight: 700,
+            background: "#FFF7DE", color: "#B8860B",
+          }}>
+            Tax Invoice (GST Applied)
+          </div>
+        )}
+      </div>
+
+      <div style={{ background: "#fff", border: "1px solid #EFEFEF", borderRadius: 20, overflow: "hidden" }}>
+        <div style={{ aspectRatio: "16/9", overflow: "hidden", background: "#F7F7F7", position: "relative" }}>
+          <VehicleHero booking={booking} lookupVehicle={lookupVehicle} />
+        </div>
+        <div style={{ padding: 26 }}>
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10, marginBottom: 18 }}>
+            <h2 style={{ fontWeight: 700, fontSize: 19, margin: 0 }}>{booking.vehicle}</h2>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "#1a8a4a", background: "#e7f6ed", padding: "5px 12px", borderRadius: 9999 }}>
+              {booking.paymentStatus}
+            </span>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "18px 16px", fontSize: 13.5 }}>
+            <DetailCell
+              label="Route"
+              value={`${shortAddress(booking.pickup)} → ${shortAddress(booking.drop)}`}
+              title={`${booking.pickup} → ${booking.drop}`}
+            />
+            <DetailCell label="Date & Time" value={formatDateTime(booking.date, booking.time)} />
+            <DetailCell label="Seats · AC" value={booking.vehicleSeats ? `${booking.vehicleSeats} Seater · A/C` : "—"} />
+            <DetailCell label="Passengers" value={booking.passengerCount || "—"} />
+            <DetailCell label="Driver" value="Assigned 2 hrs before pickup" />
+            <DetailCell label="Total Paid" value={fmtINR(booking.amountPaid ?? 0)} />
+          </div>
+
+          {booking.balanceDue > 0 && (
+            <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px dashed #EFEFEF" }}>
+              <Row label="Balance Due (on trip)" value={fmtINR(booking.balanceDue)} bold />
+            </div>
+          )}
+
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 24 }}>
+            <a
+              href={`/my-booking?b=${booking.bookingId}`}
+              className="hover:!bg-[#FFB300]"
+              style={{ flex: "1 1 150px", padding: 14, borderRadius: 12, border: "none", background: "#FFD54F", color: "#111", fontWeight: 700, fontSize: 14, textAlign: "center", cursor: "pointer" }}
+            >
+              View Booking
+            </a>
+            <button
+              onClick={() => setShowInvoice(true)}
+              className="hover:!bg-[#F7F7F7]"
+              style={{ flex: "1 1 150px", padding: 14, borderRadius: 12, border: "1.5px solid #111", background: "#fff", color: "#111", fontWeight: 600, fontSize: 14, cursor: "pointer" }}
+            >
+              {isTaxInvoice ? "View / Download Invoice" : "View / Download Receipt"}
+            </button>
+            <a
+              href="/contact-us"
+              style={{ flex: "1 1 150px", padding: 14, borderRadius: 12, border: "1.5px solid #E5E5E5", background: "#fff", color: "#111", fontWeight: 600, fontSize: 14, textAlign: "center" }}
+            >
+              Contact Support
+            </a>
+          </div>
+        </div>
+      </div>
+
+      {(realEmailOrEmpty(booking.email) || booking.mobile) && (
+        <p style={{ textAlign: "center", marginTop: 20, fontSize: 12.5, color: "#666" }}>
+          A confirmation has been sent to <b>{realEmailOrEmpty(booking.email) || booking.mobile}</b>
+        </p>
+      )}
+
+      {showInvoice && (
+        <BookingInvoiceModal booking={booking} onClose={() => setShowInvoice(false)} />
+      )}
+    </main>
+  );
+}
+
+function DetailCell({ label, value, title }) {
+  return (
+    <div style={{ minWidth: 0 }} title={title}>
+      <div style={{ color: "#999", fontSize: 11.5, fontWeight: 500, marginBottom: 2 }}>{label}</div>
+      <div style={{ fontWeight: 600, wordBreak: "break-word" }}>{value}</div>
+    </div>
+  );
+}
+
+function Row({ label, value, bold }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+      <span style={{ color: "#666" }}>{label}</span>
+      <span style={{ fontWeight: bold ? 800 : 600, fontFamily: bold ? "'Montserrat',sans-serif" : undefined, fontSize: bold ? 15 : 13 }}>{value}</span>
+    </div>
+  );
+}

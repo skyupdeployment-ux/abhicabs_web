@@ -1,0 +1,445 @@
+import { formatDateTime } from "../../src/lib/dateTime";
+import React, { useEffect, useState, useCallback } from "react";
+import { navigate } from "vike/client/router";
+import { fmtINR } from "../../src/data/mockData";
+import { bookingsApi } from "../../src/api";
+import { getCancellationQuote, cancelBooking, getBookingByNumber } from "../../src/api/services/bookings";
+import { normaliseRealBooking } from "../../src/hooks/useBookingLookup";
+import useVehicleLookup from "../../src/hooks/useVehicleLookup";
+import VehicleHero from "../../src/components/VehicleHero";
+import StateBlock, { Spinner } from "../../src/components/StateBlock";
+import Button from "../../src/components/ui/Button";
+import BackLink, { recordNavStep } from "../../src/components/BackLink";
+import { IconPin } from "../../src/components/Icons";
+import { isAuthenticated } from "../../src/api/tokens";
+import { openLogin, AUTH_CHANGED } from "../../src/lib/authEvents";
+
+// Same real-backend status -> display-bucket mapping the Booking Details page
+// uses, so both screens agree on what "Upcoming"/"Ongoing"/etc. mean.
+function toDisplayStatus(realStatus) {
+  switch (realStatus) {
+    case "COMPLETED": return "completed";
+    case "CANCELLED":
+    case "EXPIRED": return "cancelled";
+    case "EN_ROUTE":
+    case "ONGOING":
+    case "ARRIVED": return "ongoing";
+    default: return "upcoming"; // PENDING, CONFIRMED, ALLOCATED
+  }
+}
+
+const STATUS_LABEL = { upcoming: "Upcoming", ongoing: "Ongoing", completed: "Completed", cancelled: "Cancelled" };
+const STATUS_COLORS = {
+  upcoming: { bg: "#FFF7DE", fg: "#B8860B" },
+  ongoing: { bg: "#E5F0FF", fg: "#1155CC" },
+  completed: { bg: "#e7f6ed", fg: "#1a8a4a" },
+  cancelled: { bg: "#FEE2E2", fg: "#B23B00" },
+};
+
+const FILTERS = [
+  { key: "all", label: "All" },
+  { key: "upcoming", label: "Upcoming" },
+  { key: "ongoing", label: "Ongoing" },
+  { key: "completed", label: "Completed" },
+  { key: "cancelled", label: "Cancelled" },
+];
+
+const PAGE_SIZE = 20;
+
+export default function Page() {
+  const lookupVehicle = useVehicleLookup();
+
+  // SSR renders this too, where localStorage (and therefore isAuthenticated)
+  // isn't available — gate every auth-dependent branch behind a mounted flag
+  // so the server and first client paint agree, then re-check on the client.
+  const [ready, setReady] = useState(false);
+  const [authed, setAuthed] = useState(false);
+
+  const [bookings, setBookings] = useState([]);
+  const [status, setStatus] = useState("loading"); // loading | ready | error
+  const [error, setError] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [filter, setFilter] = useState("all");
+
+  // ── Cancel booking modal ──
+  const CANCEL_REASONS = [
+    "Change of plans",
+    "Found a better deal",
+    "Booked by mistake",
+    "Trip date/time changed",
+    "Vehicle type not suitable",
+    "Other",
+  ];
+  const [cancelTarget, setCancelTarget] = useState(null);
+  const [selectedReason, setSelectedReason] = useState("");
+  const [otherReason, setOtherReason] = useState("");
+  const [cancelQuote, setCancelQuote] = useState(null);
+  const [cancelQuoteLoading, setCancelQuoteLoading] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [cancelError, setCancelError] = useState("");
+
+  const finalReason = selectedReason === "Other" ? otherReason.trim() : selectedReason;
+
+  // Resolve UUID — bookings from the list may only have bookingNumber, not UUID
+  async function resolveUUID(booking) {
+    if (booking.id && booking.id.includes("-") && booking.id.length > 30) return booking.id;
+    try {
+      const data = await getBookingByNumber(booking.bookingId);
+      const b = data?.booking || data;
+      return b?.id || booking.bookingId;
+    } catch { return booking.bookingId; }
+  }
+
+  async function openCancelModal(booking) {
+    setCancelTarget(booking);
+    setSelectedReason("");
+    setOtherReason("");
+    setCancelQuote(null);
+    setCancelError("");
+    setCancelQuoteLoading(true);
+    try {
+      const uuid = await resolveUUID(booking);
+      setCancelTarget((prev) => ({ ...prev, _uuid: uuid }));
+      const quote = await getCancellationQuote(uuid);
+      setCancelQuote(quote);
+    } catch { setCancelQuote(null); }
+    finally { setCancelQuoteLoading(false); }
+  }
+
+  async function handleCancel() {
+    if (!cancelTarget || finalReason.length < 3) return;
+    setCancelLoading(true);
+    setCancelError("");
+    try {
+      const uuid = cancelTarget._uuid || await resolveUUID(cancelTarget);
+      await cancelBooking(uuid, finalReason);
+      setCancelTarget(null);
+      loadPage(1, false);
+    } catch (err) {
+      setCancelError(err?.response?.data?.message || err?.message || "Could not cancel. Please try again.");
+    } finally { setCancelLoading(false); }
+  }
+
+  // Fetch one page of the signed-in customer's real bookings and normalise each
+  // raw record into the one shape both this list and Booking Details render from.
+  const loadPage = useCallback(async (pageNum, append) => {
+    try {
+      const data = await bookingsApi.listMyBookings({ page: pageNum, limit: PAGE_SIZE });
+      const items = Array.isArray(data?.items) ? data.items : [];
+      const normalised = items.map(normaliseRealBooking);
+      setBookings((prev) => (append ? [...prev, ...normalised] : normalised));
+      setPage(data?.pagination?.page || pageNum);
+      setTotalPages(data?.pagination?.totalPages || 1);
+      setStatus("ready");
+    } catch (err) {
+      if (!append) {
+        setError(err?.message || "We couldn't load your bookings right now.");
+        setStatus("error");
+      }
+    }
+  }, []);
+
+  // On mount (client only), decide whether we're really signed in. A guest
+  // session is treated as logged-out here — the backend list is keyed on the
+  // account, so a guest would only ever see an empty list; prompt sign-in
+  // instead. Reload automatically once the in-place login popup reports success.
+  useEffect(() => {
+    recordNavStep("/my-booking");
+    setReady(true);
+
+    function sync() {
+      const isAuthed = isAuthenticated();
+      setAuthed(isAuthed);
+      if (isAuthed) {
+        setStatus("loading");
+        setError("");
+        loadPage(1, false);
+      } else {
+        setStatus("ready");
+      }
+    }
+    sync();
+
+    window.addEventListener(AUTH_CHANGED, sync);
+    return () => window.removeEventListener(AUTH_CHANGED, sync);
+  }, [loadPage]);
+
+  async function loadMore() {
+    if (loadingMore || page >= totalPages) return;
+    setLoadingMore(true);
+    await loadPage(page + 1, true);
+    setLoadingMore(false);
+  }
+
+  function retry() {
+    setStatus("loading");
+    setError("");
+    loadPage(1, false);
+  }
+
+  const visible = filter === "all"
+    ? bookings
+    : bookings.filter((b) => toDisplayStatus(b.status) === filter);
+
+  // Per-bucket counts for the filter pills (from everything loaded so far).
+  const counts = bookings.reduce((acc, b) => {
+    const d = toDisplayStatus(b.status);
+    acc[d] = (acc[d] || 0) + 1;
+    return acc;
+  }, {});
+
+  const pillStyle = (active) => ({
+    padding: "8px 16px", borderRadius: 9999, border: "none",
+    fontWeight: 600, fontSize: 13, cursor: "pointer",
+    background: active ? "#111" : "#F3F3F3",
+    color: active ? "#FFD54F" : "#555",
+    whiteSpace: "nowrap",
+  });
+
+  return (
+    <main className="page-main" style={{ maxWidth: 880, margin: "0 auto", padding: "24px 22px 70px" }}>
+      {/* Authored CSS with real media queries — layout-critical, so not left to
+          utility classes (JIT has been unreliable for this in the codebase). */}
+      <style>{`
+        .mbk-card { display:flex; flex-direction:column; background:#fff; border:1px solid #EFEFEF;
+          border-radius:18px; overflow:hidden; text-decoration:none; color:inherit;
+          transition:border-color .15s, box-shadow .15s; }
+        .mbk-card:hover { border-color:#FFD54F; }
+        .mbk-thumb { position:relative; width:100%; aspect-ratio:16/10; background:#F7F7F7; flex:none; }
+        .mbk-body { padding:15px 16px; display:flex; flex-direction:column; min-width:0; flex:1; }
+        .mbk-head { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:6px; }
+        .mbk-route { display:flex; flex-direction:column; gap:3px; min-width:0; flex:1; }
+        .mbk-loc { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; max-width:100%; font-weight:700; font-size:15.5px; }
+        .mbk-drop { display:flex; align-items:center; gap:5px; color:#555; font-weight:600; font-size:13.5px; }
+        .mbk-drop span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+        .mbk-foot { display:flex; align-items:center; justify-content:space-between; margin-top:auto; gap:10px; flex-wrap:wrap; }
+        @media (min-width:600px) {
+          .mbk-thumb { width:190px; flex:0 0 190px; aspect-ratio:auto; min-height:150px; align-self:stretch; }
+          .mbk-card { flex-direction:row; }
+          .mbk-body { padding:16px 18px; }
+          .mbk-loc { font-size:16px; }
+        }
+      `}</style>
+      <BackLink to="/" label="Back" />
+
+      <div style={{ marginBottom: 22 }}>
+        <h1 style={{ fontWeight: 800, fontSize: "clamp(22px,3vw,32px)", margin: "0 0 6px", letterSpacing: "-.02em" }}>My Bookings</h1>
+        <p style={{ fontSize: 14.5, color: "#666", margin: 0 }}>Your trips with ABHI CABS — tap any booking to see full details.</p>
+      </div>
+
+      {/* Nothing renders auth-dependent until the client has mounted, so SSR
+          and hydration match. */}
+      {!ready ? (
+        <StateBlock icon={<Spinner />} title="Loading…" />
+      ) : !authed ? (
+        <StateBlock
+          tone="info"
+          icon={<IconPin className="w-6.5 h-6.5" />}
+          title="Sign in to see your bookings"
+          description="Your booking history is tied to your account. Sign in with your mobile number to view and manage your trips."
+          action={<Button onClick={() => openLogin()}>Sign In</Button>}
+        />
+      ) : status === "loading" ? (
+        <StateBlock icon={<Spinner />} title="Loading your bookings…" description="Fetching your trips." />
+      ) : status === "error" ? (
+        <StateBlock
+          tone="error"
+          icon={<IconPin className="w-6.5 h-6.5" />}
+          title="We couldn't load your bookings"
+          description={error}
+          action={<Button onClick={retry}>Try Again</Button>}
+        />
+      ) : bookings.length === 0 ? (
+        <StateBlock
+          tone="empty"
+          icon={<IconPin className="w-6.5 h-6.5" />}
+          title="No bookings yet"
+          description="When you book a cab, it'll show up here so you can track and manage it."
+          action={<Button href="/#booking">Book a Cab</Button>}
+        />
+      ) : (
+        <>
+          {/* Status filter pills */}
+          <div style={{ display: "flex", gap: 8, marginBottom: 22, flexWrap: "wrap" }}>
+            {FILTERS.map((f) => {
+              const count = f.key === "all" ? bookings.length : (counts[f.key] || 0);
+              return (
+                <button key={f.key} style={pillStyle(filter === f.key)} onClick={() => setFilter(f.key)}>
+                  {f.label}{count ? ` (${count})` : ""}
+                </button>
+              );
+            })}
+          </div>
+
+          {visible.length === 0 ? (
+            <div style={{ background: "#fff", border: "1px dashed #E5E5E5", borderRadius: 20, padding: "40px 32px", textAlign: "center" }}>
+              <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 6 }}>No {STATUS_LABEL[filter]?.toLowerCase()} bookings</div>
+              <p style={{ fontSize: 14, color: "#666", margin: 0 }}>Try a different filter to see your other trips.</p>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              {visible.map((b) => (
+                <BookingCard key={b.bookingId} booking={b} lookupVehicle={lookupVehicle} onCancel={openCancelModal} />
+              ))}
+            </div>
+          )}
+
+          {/* Load more — only while the filtered view is the full list, since
+              server pagination can't be scoped to a client-side status tab. */}
+          {filter === "all" && page < totalPages && (
+            <div style={{ textAlign: "center", marginTop: 22 }}>
+              <Button variant="outline" onClick={loadMore} disabled={loadingMore}>
+                {loadingMore ? "Loading…" : "Load more"}
+              </Button>
+            </div>
+          )}
+        </>
+      )}
+      {/* Cancel booking modal */}
+      {cancelTarget && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.5)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
+          onClick={() => !cancelLoading && setCancelTarget(null)}>
+          <div style={{ background: "#fff", borderRadius: 20, padding: 28, maxWidth: 440, width: "100%", boxShadow: "0 20px 60px rgba(0,0,0,.2)" }}
+            onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: "#DC2626", marginBottom: 4 }}>Cancel Booking?</h3>
+            <p style={{ fontSize: 13.5, color: "#6B7280", marginBottom: 16 }}>
+              Booking {cancelTarget.bookingId} — this action cannot be undone.
+            </p>
+
+            {cancelQuoteLoading ? (
+              <p style={{ fontSize: 13, color: "#9CA3AF", marginBottom: 16 }}>Checking cancellation fee…</p>
+            ) : cancelQuote ? (
+              <div style={{ marginBottom: 16, padding: 14, borderRadius: 12, background: "#FFF7ED", border: "1px solid #FED7AA" }}>
+                {Number(cancelQuote.fee) > 0 ? (
+                  <p style={{ fontSize: 13.5, fontWeight: 600, color: "#92400E", margin: 0 }}>
+                    Cancellation fee: {fmtINR(cancelQuote.fee)}
+                    {cancelQuote.refund > 0 && <> · Refund: {fmtINR(cancelQuote.refund)}</>}
+                  </p>
+                ) : (
+                  <p style={{ fontSize: 13.5, fontWeight: 600, color: "#15803D", margin: 0 }}>
+                    Free cancellation — no charges apply
+                  </p>
+                )}
+              </div>
+            ) : null}
+
+            <p style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 10 }}>Select a reason:</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 14 }}>
+              {CANCEL_REASONS.map((r) => (
+                <label key={r} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 10, border: selectedReason === r ? "1.5px solid #FFD54F" : "1.5px solid #F3F4F6", background: selectedReason === r ? "#FFFBEB" : "#FAFAFA", cursor: "pointer", transition: "all .15s" }}>
+                  <input
+                    type="radio" name="cancelReason" value={r} checked={selectedReason === r}
+                    onChange={() => setSelectedReason(r)}
+                    style={{ accentColor: "#B8860B", width: 16, height: 16, margin: 0 }}
+                  />
+                  <span style={{ fontSize: 14, color: "#374151", fontWeight: selectedReason === r ? 600 : 400 }}>{r}</span>
+                </label>
+              ))}
+            </div>
+
+            {selectedReason === "Other" && (
+              <textarea
+                value={otherReason}
+                onChange={(e) => setOtherReason(e.target.value)}
+                placeholder="Please describe your reason…"
+                rows={3}
+                style={{ width: "100%", padding: "12px 14px", border: "1.5px solid #E5E7EB", borderRadius: 12, fontSize: 14, resize: "vertical", fontFamily: "inherit", outline: "none", boxSizing: "border-box", marginBottom: 6 }}
+                onFocus={(e) => { e.target.style.borderColor = "#FFD54F"; }}
+                onBlur={(e) => { e.target.style.borderColor = "#E5E7EB"; }}
+              />
+            )}
+
+            {cancelError && (
+              <p style={{ fontSize: 13, color: "#DC2626", margin: "8px 0", fontWeight: 500 }}>{cancelError}</p>
+            )}
+
+            <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
+              <button
+                onClick={() => setCancelTarget(null)}
+                disabled={cancelLoading}
+                style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "1.5px solid #E5E7EB", background: "#fff", fontWeight: 600, fontSize: 14, cursor: "pointer" }}
+              >
+                Go Back
+              </button>
+              <button
+                onClick={handleCancel}
+                disabled={cancelLoading || finalReason.length < 3}
+                style={{ flex: 1, padding: "12px 0", borderRadius: 12, border: "none", background: cancelLoading ? "#FCA5A5" : "#DC2626", color: "#fff", fontWeight: 700, fontSize: 14, cursor: cancelLoading ? "wait" : "pointer", opacity: finalReason.length < 3 ? 0.5 : 1 }}
+              >
+                {cancelLoading ? "Cancelling…" : "Yes, Cancel"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </main>
+  );
+}
+
+function BookingCard({ booking, lookupVehicle, onCancel }) {
+  const displayStatus = toDisplayStatus(booking.status);
+  const sc = STATUS_COLORS[displayStatus];
+  const href = `/booking-details?b=${encodeURIComponent(booking.bookingId)}`;
+
+  return (
+    <a
+      href={href}
+      onClick={(e) => {
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+        e.preventDefault();
+        navigate(href);
+      }}
+      className="mbk-card"
+    >
+      {/* Thumbnail — full-width on mobile, fixed side panel on larger screens */}
+      <div className="mbk-thumb">
+        <VehicleHero booking={booking} lookupVehicle={lookupVehicle} />
+      </div>
+
+      {/* Body */}
+      <div className="mbk-body">
+        <div className="mbk-head">
+          <div className="mbk-route">
+            <span className="mbk-loc" title={booking.pickup}>{booking.pickup || "—"}</span>
+            <span className="mbk-drop" title={booking.drop}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}><path d="M5 12h14M13 6l6 6-6 6" stroke="#FFD54F" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              <span>{booking.drop || "—"}</span>
+            </span>
+          </div>
+          <span style={{ fontSize: 11.5, fontWeight: 600, padding: "4px 11px", borderRadius: 9999, background: sc.bg, color: sc.fg, flexShrink: 0, whiteSpace: "nowrap" }}>
+            {STATUS_LABEL[displayStatus]}
+          </span>
+        </div>
+
+        <p style={{ fontSize: 12.5, color: "#888", margin: "0 0 12px" }}>Booking {booking.bookingId}</p>
+
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 18px", fontSize: 13, color: "#555", marginBottom: 14 }}>
+          <span>{formatDateTime(booking.date, booking.time) || "—"}</span>
+          {booking.vehicle && <span>{booking.vehicle}</span>}
+        </div>
+
+        <div className="mbk-foot">
+          <span style={{ fontFamily: "'Montserrat',sans-serif", fontWeight: 700, fontSize: 19 }}>{fmtINR(booking.fare)}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            {displayStatus === "upcoming" && (
+              <button
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onCancel?.(booking); }}
+                style={{ padding: "6px 14px", borderRadius: 8, border: "1.5px solid #FCA5A5", background: "transparent", color: "#DC2626", fontWeight: 600, fontSize: 12.5, cursor: "pointer", transition: "all .15s", whiteSpace: "nowrap" }}
+                onMouseEnter={(e) => { e.target.style.background = "#FEF2F2"; }}
+                onMouseLeave={(e) => { e.target.style.background = "transparent"; }}
+              >
+                Cancel
+              </button>
+            )}
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontWeight: 600, fontSize: 13, color: "#B8860B" }}>
+              View details
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            </span>
+          </div>
+        </div>
+      </div>
+    </a>
+  );
+}

@@ -1,0 +1,781 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');
+@import "tailwindcss";
+
+/* ── ABHI CABS Brand Design System ──────────────────────────────────────────*/
+
+@theme {
+  --color-primary:       #FFD54F;
+  --color-primary-dark:  #E6AC00;
+  --color-primary-light: #FFD54F;
+  --color-primary-tint:  #FFFBEA;
+  --color-brand-black:   #111111;
+  --color-brand-black2:  #1C1C1C;
+  --color-bg:            #FAFAFA;
+  --color-text:          #111111;
+  --color-text-secondary:#555555;
+  --color-border:        #E5E7EB;
+  --color-success:       #16A34A;
+  --color-success-tint:  #DCFCE7;
+  --color-warning:       #D97706;
+  --color-warning-tint:  #FEF3C7;
+  --color-error:         #DC2626;
+  --color-error-tint:    #FEE2E2;
+  --font-sans: "Montserrat", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --shadow-card:    0 1px 3px rgba(17,17,17,0.06);
+  --shadow-elevated:0 8px 24px rgba(17,17,17,0.10);
+  --shadow-lifted:  0 20px 48px rgba(17,17,17,0.16);
+  --shadow-brand:   0 8px 24px rgba(255,213,79,0.35);
+  --animate-drive: driveAlong 9s ease-in-out infinite;
+}
+
+@keyframes driveAlong {
+  0%   { left: 12%; top: 78%; }
+  30%  { left: 38%; top: 40%; }
+  55%  { left: 58%; top: 55%; }
+  80%  { left: 78%; top: 22%; }
+  100% { left: 12%; top: 78%; }
+}
+
+/* ── Base resets ─────────────────────────────────────────────────────────────*/
+*, *::before, *::after { box-sizing: border-box; }
+html {
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+body {
+  background-color: #FAFAFA;
+  color: #111111;
+  font-family: "Montserrat", "SF Pro Display", -apple-system, sans-serif;
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+img { max-width: 100%; height: auto; }
+button { cursor: pointer; }
+
+/* ── Brand utilities ──────────────────────────────────────────────────────────*/
+.btn-brand { background-color: #FFD54F; color: #111111; font-weight: 700; }
+.btn-brand:hover { background-color: #E6AC00; }
+
+/* ── Scroll utilities ─────────────────────────────────────────────────────────*/
+.ac-scroll {
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  scroll-snap-type: x mandatory;
+}
+.ac-scroll::-webkit-scrollbar { display: none; }
+.ac-scroll > * { scroll-snap-align: start; }
+
+/* Booking widget tabs */
+.booking-tabs {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  white-space: nowrap;
+}
+.booking-tabs::-webkit-scrollbar { display: none; }
+
+/* Tables */
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* ── Utility bar ──────────────────────────────────────────────────────────────*/
+.ac-util-wrap {
+  position: relative; color: #fff; overflow: hidden;
+  background:
+    radial-gradient(600px 80px at 12% 50%, rgba(255,213,79,.16), transparent 70%),
+    radial-gradient(500px 80px at 88% 50%, rgba(255,213,79,.12), transparent 70%),
+    linear-gradient(90deg, #0b0b0b 0%, #1a1a1a 50%, #0b0b0b 100%);
+  border-bottom: 1px solid rgba(255,213,79,.35);
+}
+/* slow light sweep across the bar */
+.ac-util-wrap::after {
+  content: ""; position: absolute; top: 0; bottom: 0; left: -30%; width: 30%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.06), transparent);
+  animation: ac-util-sweep 7s ease-in-out infinite; pointer-events: none;
+}
+@keyframes ac-util-sweep { 0% { left: -30%; } 60%, 100% { left: 130%; } }
+
+.ac-util-bar { font-size: 12.5px; font-weight: 500; position: relative; z-index: 1; }
+
+.ac-util-loc {
+  display: inline-flex; align-items: center; gap: 8px; min-width: 0;
+  padding: 3px 12px 3px 4px; border-radius: 9999px;
+  background: rgba(255,255,255,.06); border: 1px solid rgba(255,213,79,.28);
+  white-space: nowrap;
+}
+.ac-util-loc b { color: #FFD54F; font-weight: 700; }
+.ac-util-loc-icon {
+  display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 9999px;
+  background: #FFD54F; color: #111; flex: none;
+}
+.ac-util-muted { color: rgba(255,255,255,.75); }
+
+.ac-util-link {
+  display: inline-flex; align-items: center; gap: 6px; color: rgba(255,255,255,.85);
+  transition: color .2s;
+}
+.ac-util-link:hover { color: #FFD54F; }
+
+.ac-util-sep { width: 1px; height: 16px; background: rgba(255,255,255,.18); }
+
+.ac-util-phones { display: inline-flex; align-items: center; gap: 8px; }
+.ac-util-phone-icon {
+  display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 9999px;
+  background: rgba(255,213,79,.15); color: #FFD54F; border: 1px solid rgba(255,213,79,.4);
+}
+.ac-util-phone {
+  color: #fff; font-weight: 700; letter-spacing: .02em; padding: 2px 8px; border-radius: 7px;
+  transition: background .2s, color .2s;
+}
+.ac-util-phone:hover { background: #FFD54F; color: #111; }
+.ac-util-slash { color: rgba(255,255,255,.3); }
+
+.ac-util-badge {
+  display: inline-flex; align-items: center; gap: 7px; padding: 4px 12px; border-radius: 9999px;
+  background: linear-gradient(90deg, #FFD54F, #FFD54F); color: #111; font-weight: 800;
+  font-size: 12px; letter-spacing: .02em; box-shadow: 0 0 16px rgba(255,213,79,.35);
+  white-space: nowrap;
+}
+.ac-util-dot { width: 7px; height: 7px; border-radius: 9999px; background: #111; flex: none; }
+
+.ac-util-callnow {
+  display: none; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 9999px;
+  background: #FFD54F; color: #111; font-weight: 800; white-space: nowrap; flex: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ac-util-wrap::after { animation: none; display: none; }
+}
+
+@media (max-width: 768px) {
+  .ac-util-hide { display: none !important; }
+  .ac-util-bar  { height: 36px !important; font-size: 11px !important; }
+  .ac-util-callnow { display: inline-flex; }
+  .ac-util-loc { padding: 2px 10px 2px 3px; gap: 6px; }
+  .ac-util-loc-icon { width: 18px; height: 18px; }
+}
+@media (max-width: 360px) {
+  .ac-util-loc .ac-util-muted:first-child { display: none; }
+}
+
+/* ── Header ───────────────────────────────────────────────────────────────────*/
+/* Layout-critical responsive behaviour is authored here (real media queries)
+   rather than via Tailwind utilities, which have had JIT class-generation
+   gaps in this codebase and could silently drop breakpoint show/hide or
+   alignment classes. The mobile overrides below use !important so they win
+   regardless of source order against the base rules. */
+.ac-util-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; max-width: 1280px; margin: 0 auto; padding: 0 16px; height: 38px;
+}
+.ac-util-hide { display: flex; align-items: center; gap: 22px; }
+
+.ac-nav-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; position: relative; max-width: 1440px; margin: 0 auto;
+  padding: 0 16px; height: 72px;
+}
+.ac-logo-link  { display: flex; align-items: center; gap: 10px; flex-shrink: 0; min-width: 0; }
+.ac-logo-img   { height: 44px; width: auto; max-width: 180px; object-fit: contain; flex: none; }
+.ac-nav-links  { display: flex; align-items: center; flex-shrink: 1; min-width: 0; gap: 1px; }
+.ac-nav-links a, .ac-nav-links > div { flex-shrink: 0; }
+.ac-nav-actions{ display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.ac-user-menu  { position: relative; display: block; }
+.ac-signin     { display: flex; align-items: center; gap: 8px; }
+.ac-download   { display: inline-flex; align-items: center; gap: 6px; }
+.ac-hamburger  { display: none; align-items: center; justify-content: center; flex: none; }
+
+@media (min-width: 640px) {
+  .ac-util-bar, .ac-nav-row { padding: 0 22px; }
+}
+@media (max-width: 1023px) {
+  .ac-header-h  { height: 60px !important; }
+  .ac-nav-row   { height: 60px; }
+  .ac-logo-text { font-size: 17px !important; }
+  .ac-logo-tag  { display: none !important; }
+  /* Desktop-only clusters off, hamburger on */
+  .ac-nav-links, .ac-user-menu, .ac-signin, .ac-download { display: none !important; }
+  .ac-hamburger { display: inline-flex !important; }
+}
+@media (max-width: 639px) {
+  .ac-logo-img { height: 36px; width: auto; max-width: 150px; }
+}
+@media (min-width: 1024px) {
+  .ac-hide-desktop { display: none !important; }
+}
+
+/* ── Mobile drawer ────────────────────────────────────────────────────────────*/
+.ac-drawer {
+  transition: transform .3s cubic-bezier(.4,0,.2,1);
+}
+
+/* ── Booking widget ───────────────────────────────────────────────────────────*/
+@media (max-width: 639px) {
+  /* Mode tabs scroll */
+  .booking-tabs button {
+    font-size: 13px !important;
+    padding: 7px 14px !important;
+  }
+
+  /* All grid fields stack to 1 col */
+  .bw-grid { grid-template-columns: minmax(0, 1fr) !important; }
+
+  /* Date/time side by side on mobile */
+  .bw-date-time-row {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  /* Airport direction toggle (Drop to Airport / Pickup from Airport).
+     The .bw-segment container is inline-flex and its two nowrap pills
+     (px-5 + icon + long labels) overflow the card on narrow screens —
+     "Pickup from Airport" was getting clipped. Make it a full-width,
+     equal-halves control with tighter padding and hide the direction
+     icon (same approach as the mode tabs) so both labels fit on one row. */
+  .bw-air-dir { display: flex !important; width: 100% !important; }
+  .bw-air-dir > button {
+    flex: 1 1 0 !important; min-width: 0 !important;
+    padding-left: 10px !important; padding-right: 10px !important;
+    font-size: 12.5px !important; justify-content: center !important;
+  }
+  .bw-air-dir > button svg { display: none !important; }
+
+  /* Search button */
+  .bw-search-btn { font-size: 15px !important; padding: 14px !important; }
+
+  /* Add stops counter */
+  .bw-stops-counter { min-width: 100px !important; }
+}
+
+/* Very small phones: the two airport-direction labels can't sit side by side,
+   so stack them full-width to guarantee neither is clipped. */
+@media (max-width: 360px) {
+  .bw-air-dir { flex-direction: column !important; border-radius: 16px !important; gap: 6px !important; }
+  .bw-air-dir > button { width: 100% !important; font-size: 13px !important; }
+}
+
+/* ── Coverage map ─────────────────────────────────────────────────────────────*/
+/* On desktop the "FOUR STATES / COUNTLESS / DESTINATIONS" label floats over the
+   map's empty top-right corner. When the section stacks (map becomes full-width
+   and tall), that float ends up sitting on top of the map graphic. Below the
+   stacking point, drop the label into normal flow above the map instead. */
+@media (max-width: 960px) {
+  .cov-map-col    { min-height: auto !important; }
+  .cov-float-label {
+    position: static !important; text-align: right !important; z-index: auto !important;
+    padding: 0 clamp(20px, 5vw, 30px);
+  }
+  .cov-map-wrap   { position: static !important; height: clamp(300px, 72vw, 460px) !important; margin-top: 10px; }
+}
+
+/* ── Booking search page ──────────────────────────────────────────────────────*/
+@media (max-width: 1023px) {
+  /* The sidebar is sticky at top:120 on desktop. Stacked above the results
+     on a phone that pinned the whole filter panel to the viewport and ate
+     the screen — it must scroll with the page once it's full width. */
+  .booking-search-sidebar {
+    position: static !important;
+    top: auto !important;
+    width: 100% !important;
+    flex: 1 1 100% !important;
+    min-width: 0 !important;
+  }
+}
+@media (max-width: 640px) {
+  .booking-search-layout { flex-direction: column !important; gap: 14px !important; }
+  .booking-search-sidebar {
+    border-radius: 16px !important;
+    padding: 16px !important;
+  }
+  .vehicle-card-wrap { flex-direction: column !important; }
+  .vehicle-card-image {
+    min-height: 180px !important;
+    height: 200px !important;
+    position: relative !important;
+    flex: 1 1 100% !important;
+    min-width: 0 !important;
+  }
+  /* Filter pills wrap */
+  .filter-pills { gap: 6px !important; }
+  .filter-pills button { padding: 6px 12px !important; font-size: 12px !important; height: 34px !important; }
+}
+
+/* ── How it works ─────────────────────────────────────────────────────────────*/
+/* The steps row is a hard repeat(N, 1fr) grid — N columns squeezed onto a
+   phone made each step a few characters wide. Stack them instead, and drop
+   the connector track (it only reads as a line across a horizontal row). */
+@media (max-width: 768px) {
+  .hiw-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 22px 12px !important; }
+  .hiw-grid > div[style*="position: absolute"] { display: none !important; }
+}
+@media (max-width: 460px) {
+  .hiw-grid { grid-template-columns: minmax(0, 1fr) !important; }
+}
+
+/* ── Rate grids inside vehicle modals ─────────────────────────────────────────*/
+@media (max-width: 520px) {
+  .rate-grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}
+@media (max-width: 340px) {
+  .rate-grid-3 { grid-template-columns: minmax(0, 1fr) !important; }
+}
+
+/* ── Booking widget trip-type tabs ───────────────────────────────────────────*/
+/* The four tabs (One Way / Round Trip / Local / Airport) sat in a horizontally
+   scrolling flex row, so on a phone the 4th was clipped at the edge with no
+   visual hint it existed — people simply never found Airport. Lay them out as
+   an equal 4-column grid that always fits the viewport instead of scrolling.
+   These override Tailwind's utility classes on the pills, hence !important. */
+@media (max-width: 640px) {
+  .bw-tabs {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 4px !important;
+    overflow-x: visible !important;
+  }
+  .bw-tabs > button {
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 8px 6px !important;
+    font-size: 12px !important;
+    gap: 5px !important;
+  }
+}
+/* Narrow phones: drop the icons so the longest label ("Round Trip") still
+   fits its column without truncating. */
+@media (max-width: 430px) {
+  .bw-tabs > button {
+    font-size: 11.5px !important;
+    padding: 8px 3px !important;
+    letter-spacing: -0.01em !important;
+  }
+  .bw-tabs > button svg { display: none !important; }
+}
+
+/* ── Summary bar ─────────────────────────────────────────────────────────────*/
+@media (max-width: 640px) {
+  .summary-bar {
+    flex-direction: column !important;
+    gap: 8px !important;
+    padding: 12px 14px !important;
+    align-items: flex-start !important;
+  }
+  /* The route text lives in child <span>s carrying their own inline
+     font-size, so the container rule alone never reached it. */
+  .summary-bar-route,
+  .summary-bar-route span { font-size: 13px !important; }
+  .summary-bar-route { flex-wrap: wrap !important; gap: 6px !important; }
+  .summary-bar-route svg { width: 16px !important; height: 16px !important; }
+  .summary-bar-meta { flex-wrap: wrap !important; gap: 6px !important; font-size: 11px !important; }
+  .summary-bar-btn { width: 100% !important; text-align: center !important; justify-content: center !important; margin-left: 0 !important; }
+}
+
+/* ── Fleet carousel ───────────────────────────────────────────────────────────*/
+@media (max-width: 640px) {
+  .fleet-card { min-width: 260px !important; max-width: 280px !important; }
+  .fleet-modal-content { padding: 14px !important; }
+  .fleet-modal-header { height: 200px !important; }
+}
+
+/* ── Checkout ─────────────────────────────────────────────────────────────────*/
+@media (max-width: 768px) {
+  .checkout-grid { grid-template-columns: minmax(0, 1fr) !important; }
+  .checkout-summary { order: -1; }
+}
+
+/* ── Payment ──────────────────────────────────────────────────────────────────*/
+@media (max-width: 640px) {
+  .payment-method-grid { grid-template-columns: minmax(0, 1fr) !important; }
+}
+
+/* ── My bookings ──────────────────────────────────────────────────────────────*/
+@media (max-width: 640px) {
+  .booking-tabs-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    display: flex;
+    white-space: nowrap;
+  }
+  .booking-tabs-scroll::-webkit-scrollbar { display: none; }
+}
+
+/* ── Footer ───────────────────────────────────────────────────────────────────*/
+@media (max-width: 640px) {
+  .footer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 24px !important; }
+}
+@media (max-width: 400px) {
+  .footer-grid { grid-template-columns: minmax(0, 1fr) !important; }
+}
+
+/* ── Coverage section ─────────────────────────────────────────────────────────*/
+@media (max-width: 640px) {
+  .coverage-left { padding: 20px 16px !important; }
+  .coverage-map  { min-height: 280px !important; }
+}
+
+/* ── How it works ─────────────────────────────────────────────────────────────*/
+@media (max-width: 640px) {
+  .hiw-step { padding: 0 6px !important; }
+  .hiw-badge { width: 56px !important; height: 56px !important; font-size: 18px !important; border-radius: 16px !important; }
+}
+
+/* ── Page padding ─────────────────────────────────────────────────────────────*/
+.page-main { padding: 24px 16px 80px; }
+@media (min-width: 640px) { .page-main { padding: 32px 22px 80px; } }
+
+/* ── Mobile sticky bottom bar ─────────────────────────────────────────────────*/
+.mobile-sticky-bar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  padding: 12px 16px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  background: #fff;
+  border-top: 1px solid #EFEFEF;
+  z-index: 100;
+  display: flex;
+  gap: 10px;
+}
+@media (min-width: 768px) { .mobile-sticky-bar { display: none !important; } }
+
+/* ── Touch targets ────────────────────────────────────────────────────────────*/
+@media (max-width: 768px) {
+  button:not(.no-touch-target),
+  a:not(.no-touch-target) { min-height: 44px; }
+}
+
+/* ── iOS input zoom prevention ────────────────────────────────────────────────*/
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+  input, select, textarea { font-size: max(16px, 1em); }
+}
+
+/* ── OTP boxes ───────────────────────────────────────────────────────────────*/
+@media (max-width: 400px) {
+  .otp-boxes input { width: 36px !important; height: 44px !important; }
+}
+
+/* ── Map picker ───────────────────────────────────────────────────────────────*/
+@media (max-width: 640px) {
+  .map-picker-dialog {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+  .map-picker-card {
+    border-radius: 22px 22px 0 0 !important;
+    max-height: 90vh !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  .map-picker-map { height: 300px !important; }
+}
+
+/* ── Location map picker ──────────────────────────────────────────────────────*/
+@media (max-width: 640px) {
+  .lmp-dialog { align-items: flex-end !important; padding: 0 !important; }
+  .lmp-card {
+    border-radius: 22px 22px 0 0 !important;
+    max-height: 92vh !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+/* ── Time picker portal ──────────────────────────────────────────────────────*/
+@media (max-width: 480px) {
+  .time-picker-portal {
+    left: 0 !important;
+    right: 0 !important;
+    min-width: unset !important;
+    width: calc(100vw - 32px) !important;
+    max-width: 320px !important;
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════════════
+   Cross-device safety net — mobile / tablet / laptop
+   Additive only. Appended AFTER all the tuned responsive rules above so it
+   never overrides them; it just catches the common cross-device issues
+   (overflow, media sizing, iOS input zoom, long-word blowout) consistently.
+   ═══════════════════════════════════════════════════════════════════════════ */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+*, *::before, *::after { box-sizing: border-box; }
+
+/* Stop stray horizontal scrolling on phones. Wide, intentionally-scrolling
+   strips (fleet cards, tables) keep their OWN inner overflow containers. */
+html, body { max-width: 100%; overflow-x: hidden; }
+
+/* Media never overflows its column. */
+img, svg, video, canvas, iframe { max-width: 100%; height: auto; }
+
+/* Long words / URLs shouldn't break out of narrow columns. */
+p, h1, h2, h3, h4, li, td, th, dd, dt { overflow-wrap: break-word; }
+
+/* iOS zooms the page when a focused field's font-size is < 16px. */
+@media (max-width: 640px) {
+  input, select, textarea { font-size: 16px !important; }
+}
+
+/* Tables stay within the viewport; a wrapper with overflow-x scrolls them. */
+table { max-width: 100%; }
+
+/* Comfortable tap targets on touch devices without changing desktop sizing. */
+@media (hover: none) and (pointer: coarse) {
+  button, a[role="button"], .btn { min-height: 40px; }
+}
+
+/* ── Shrink-to-fit safety net ────────────────────────────────────────────────
+   Grid and flex items default to min-width:auto, i.e. they refuse to get
+   narrower than their longest unbreakable line. One full Google address
+   ("MG Road, Bengaluru, Karnataka 560001, India") was enough to push the
+   whole checkout column ~40px past a 360px screen, and because html/body
+   hide horizontal overflow, the right edge (prices, Apply button) was simply
+   cut off rather than scrollable. Letting items shrink, and letting long text
+   wrap, makes every layout fit whatever width the device gives it. */
+.grid > *,
+[style*="display: grid"] > *,
+[style*="display:grid"] > * { min-width: 0; }
+body { overflow-wrap: break-word; }
+input, select, textarea { max-width: 100%; min-width: 0; }
+iframe, video, canvas, svg { max-width: 100%; }
+
+/* The fixed "Ready to ride? / Book Now" bar sat on top of the last ~70px of
+   every page on phones (footer links, copyright, final buttons). Reserve its
+   height at the bottom of the page whenever it is present. */
+@media (max-width: 767px) {
+  body:has(.mobile-sticky-bar) { padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
+}
+
+/* Stacked single-column on phones/tablets: a sticky side card would pin
+   itself over the content it now sits above. */
+@media (max-width: 1023px) {
+  .cab-fare-card { position: static !important; top: auto !important; }
+}
+
+/* Group-travel promo: on phones the text column was held to 60% of a ~330px
+   card, wrapping the heading word-by-word and the button onto three lines.
+   Give the text the full width and fade the photo further behind it. */
+@media (max-width: 520px) {
+  .promo-group-text { max-width: 75% !important; }
+}
+
+/* ── Vehicle photos ───────────────────────────────────────────────────────────
+   Fleet photos are side-on shots of the whole vehicle. Cropping them to fill a
+   tall card ("cover") cut off the bonnet and the boot — on the vehicle list
+   and the checkout banner only the middle of the car was visible. Show the
+   whole vehicle, centred on a light backdrop, whatever the card's shape.
+   (Overrides the inline object-fit on each <img>, hence !important.) */
+img.vehicle-photo {
+  object-fit: contain !important;
+  object-position: center !important;
+  background: #F6F6F4;
+  padding: 10px 12px;
+}
+img.vehicle-photo--thumb { padding: 3px; }
+/* The fleet card zooms its photo on hover; with the whole car visible that
+   pushes the ends back out of frame, so keep it still. */
+.group:hover img.vehicle-photo { transform: none !important; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Universal device adaptation
+   Appended last (additive) after a full cross-device audit. Everything above
+   was already strongly responsive — fluid clamp() type, intrinsic flex
+   (flex:1 1 Npx + min-width:min(100%,…)), auto-fit/minmax grids, bottom-sheet
+   modals, table-scroll wrappers and the safety net. This block only closes
+   the gaps that remained at the edges of the device range: the hero headline
+   on very small phones, foldables / ultra-narrow widths, and phones held
+   sideways (short landscape viewports). It never overrides the tuned rules
+   above — it only fills in widths and orientations they didn't reach.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Hero headline ────────────────────────────────────────────────────────────
+   The accent line ("Travel Comfortably.") was white-space:nowrap with a 38px
+   floor from clamp(38px,6vw,74px). On phones under ~400px that single line is
+   wider than the screen, and because html/body hide horizontal overflow it was
+   silently clipped on the right instead of scrolling. Scale the whole headline
+   down fluidly below 400px and let the accent wrap only as a last resort, so it
+   is never cut off; at 400px and up the designed look is kept exactly. */
+.hero-h1 { font-size: clamp(27px, 7.4vw, 74px) !important; }
+.hero-h1-accent { white-space: normal !important; }
+@media (min-width: 400px) {
+  .hero-h1 { font-size: clamp(38px, 6vw, 74px) !important; }
+  .hero-h1-accent { white-space: nowrap !important; }
+}
+
+/* ── Booking-request form ─────────────────────────────────────────────────────
+   Passengers + Special-requests sit in a fixed 1fr 1fr grid inside a dialog.
+   On the narrowest phones two inputs side by side get cramped — stack them. */
+@media (max-width: 380px) {
+  .brf-mini-grid { grid-template-columns: minmax(0, 1fr) !important; }
+}
+
+/* ── Foldables / ultra-narrow widths (≤360px, e.g. Galaxy Fold cover, split
+   screen) ─────────────────────────────────────────────────────────────────────
+   The safety net already prevents overflow; here we just buy back a little
+   breathing room so dense cards and the standard page gutter aren't wasteful
+   on a ~300px canvas. */
+@media (max-width: 360px) {
+  .page-main { padding-left: 12px; padding-right: 12px; }
+  .summary-bar { padding: 12px !important; }
+  .fleet-card { min-width: 220px !important; max-width: 100% !important; }
+}
+
+/* ── Short / landscape viewports (phones held sideways) ───────────────────────
+   Tall modals and bottom sheets are capped in vh, so on a ~375px-tall landscape
+   screen they can leave almost nothing visible. Let them use the full height
+   (their own overflow still scrolls the body), and keep the embedded maps from
+   eating the whole sheet. Width-based rules above are untouched. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .map-picker-card,
+  .lmp-card { max-height: 98vh !important; }
+  .map-picker-map { height: 200px !important; }
+  .fleet-modal-header { height: 150px !important; }
+  /* The booking engine overlaps the hero by -110px; on a short landscape hero
+     that pulled it over the headline. Reduce the overlap when there's no room. */
+  #booking { margin-top: -40px !important; }
+}
+
+/* ── Very wide screens (≥1536px) ──────────────────────────────────────────────
+   Content is intentionally capped at ~1280px and centred, which is correct for
+   readability. Nothing to change — this note just records that the top of the
+   range was checked and is handled by the existing max-width caps. */
+
+/* ── Free cancellation banner (home) ─────────────────────────────────────────*/
+.fc-section { max-width: 1280px; margin: 0 auto; padding: clamp(46px,6vw,80px) 22px 0; }
+.fc-banner {
+  position: relative; isolation: isolate; overflow: hidden; border-radius: 22px;
+  display: grid; grid-template-columns: 1.05fr 1fr; min-height: 340px;
+  background: #111; box-shadow: 0 18px 50px -24px rgba(0,0,0,.45);
+}
+.fc-photo { position: relative; overflow: hidden; min-height: 260px; }
+.fc-photo img {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; object-position: 30% 60%; will-change: transform;
+}
+.fc-photo-fade {
+  position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(90deg, rgba(17,17,17,0) 55%, rgba(17,17,17,.85) 88%, #111 100%);
+}
+.fc-content {
+  position: relative; display: flex; flex-direction: column; justify-content: center;
+  align-items: flex-start; padding: clamp(26px,3.4vw,48px); color: #fff;
+  background:
+    radial-gradient(420px 220px at 100% 0%, rgba(255,213,79,.14), transparent 70%),
+    #111;
+}
+.fc-badge-row { display: flex; align-items: center; gap: 12px; }
+.fc-shield {
+  display: inline-grid; place-items: center; width: 50px; height: 50px; border-radius: 9999px;
+  background: #FFD54F; box-shadow: 0 0 0 6px rgba(255,213,79,.18), 0 8px 22px rgba(255,213,79,.35);
+  flex: none;
+}
+.fc-eyebrow {
+  font-weight: 700; font-size: 11.5px; letter-spacing: .14em; text-transform: uppercase; color: #FFD54F;
+}
+.fc-title {
+  font-weight: 800; font-size: clamp(30px,3.6vw,46px); line-height: 1.05; margin: 18px 0 6px; color: #fff;
+}
+.fc-title span { color: #FFD54F; }
+.fc-sub { font-size: clamp(16px,1.6vw,20px); color: rgba(255,255,255,.8); margin: 0 0 20px; font-weight: 500; }
+.fc-sub b {
+  color: #111; background: #FFD54F; padding: 1px 9px; border-radius: 7px; font-weight: 800;
+}
+.fc-points { list-style: none; padding: 0; margin: 0 0 24px; display: flex; flex-direction: column; gap: 9px; }
+.fc-points li {
+  display: flex; align-items: center; gap: 10px; font-size: 14px; color: rgba(255,255,255,.85);
+}
+.fc-points svg { flex: none; }
+.fc-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 14px 20px; }
+.fc-cta {
+  display: inline-flex; align-items: center; gap: 8px; padding: 13px 24px; border-radius: 9999px;
+  background: #FFD54F; color: #111; font-weight: 700; font-size: 14px; transition: background-color .2s, transform .2s;
+}
+.fc-cta:hover { background: #FFB300; transform: translateY(-1px); }
+.fc-link {
+  font-size: 13.5px; font-weight: 600; color: rgba(255,255,255,.8);
+  text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgba(255,213,79,.6);
+}
+.fc-link:hover { color: #FFD54F; }
+
+@media (max-width: 860px) {
+  .fc-banner { grid-template-columns: 1fr; }
+  .fc-photo { min-height: 220px; }
+  .fc-photo-fade { background: linear-gradient(180deg, rgba(17,17,17,0) 55%, #111 100%); }
+}
+@media (max-width: 480px) {
+  .fc-photo { min-height: 190px; }
+  .fc-shield { width: 44px; height: 44px; }
+  .fc-actions { width: 100%; }
+  .fc-cta { width: 100%; justify-content: center; }
+  .fc-link { width: 100%; text-align: center; }
+}
+
+/* ── H1 Highlight & Animations ───────────────────────────────────────────── */
+.ac-h1-highlight {
+  background: linear-gradient(135deg, #E6AC00 0%, #FFD54F 50%, #E6AC00 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: ac-shine 3s ease-in-out infinite;
+}
+@keyframes ac-shine {
+  0%, 100% { background-position: 0% center; }
+  50% { background-position: 200% center; }
+}
+.ac-hero-fade-up {
+  animation: ac-fade-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.ac-hero-fade-up-delay { animation-delay: 0.15s; }
+.ac-hero-fade-up-delay2 { animation-delay: 0.3s; }
+.ac-hero-fade-up-delay3 { animation-delay: 0.45s; }
+@keyframes ac-fade-up {
+  from { opacity: 0; transform: translateY(28px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.ac-card-hover {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+}
+.ac-card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.1);
+}
+.ac-section-divider {
+  height: 3px;
+  width: 60px;
+  background: linear-gradient(90deg, #E6AC00, #FFD54F);
+  border-radius: 99px;
+  margin: 0 auto 24px;
+}
+
+/* ── Inline keyword highlighting (body copy) ─────────────────────────────────
+   One treatment per background so emphasis stays readable and on-brand:
+   .ac-hl     — yellow highlighter swipe for short key phrases on light panels
+   .ac-mark   — bold ink for key phrases on light panels (no swipe)
+   .ac-mark-d — gold, bold for key phrases on dark panels
+   .ac-em-d   — bright white, bold for longer runs on dark panels (keeps a long
+                list emphasised without turning into a solid gold block) */
+.ac-hl {
+  font-weight: 700;
+  color: #1a1a1a;
+  background: linear-gradient(transparent 58%, rgba(255, 213, 79, 0.5) 58%);
+  padding: 0 1px;
+  border-radius: 2px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+.ac-mark { font-weight: 700; color: #1a1a1a; }
+.ac-mark-d { font-weight: 700; color: #FFD54F; }
+.ac-em-d { font-weight: 700; color: #ffffff; }
+
+/* ── Mobile fixes (service & landing pages) ─────────────────────────────────── */
+/* The 44px tap-target rule made the top-bar "Call 24/7" pill taller than its 36px bar, so it was clipped. */
+.ac-util-callnow { min-height: 0 !important; height: 26px; line-height: 1; margin-left: auto; }
+/* Location pill renders with no content — don't show an empty outline. */
+.ac-util-loc:empty { display: none; }
+/* Swipeable card rows on phones (see .snap-row in ServiceLanding) */
+.snap-row { scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.snap-row::-webkit-scrollbar { display: none; }

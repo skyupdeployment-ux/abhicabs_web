@@ -1,0 +1,458 @@
+import EmojiIcon from "./ui/EmojiIcon";
+import React, { useEffect, useState } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { navigate } from "vike/client/router";
+import { LazyMotion, domMax, m, MotionConfig, AnimatePresence } from "framer-motion";
+import { selectMobileNavOpen, setMobileNavOpen } from "../store/slices/uiSlice";
+import { isAuthenticated, getStoredUserName } from "../api/tokens";
+import { AUTH_CHANGED, signInClick, rememberReturnTo } from "../lib/authEvents";
+
+// Pages with a trip in progress: signing in must not navigate away from them.
+const IN_PLACE_SIGN_IN = ["/booking-search", "/cab-details", "/checkout", "/payment"];
+function headerSignInClick(e) {
+  const path = typeof window !== "undefined" ? window.location.pathname : "";
+  if (IN_PLACE_SIGN_IN.some((p) => path.startsWith(p))) return signInClick(e);
+  rememberReturnTo(); // full /login page, then back here
+}
+import { authApi } from "../api";
+import { useToast } from "../hooks/useToast";
+import { useSiteSettings } from "../hooks/useSiteSettings";
+import { usePageContext } from "vike-react/usePageContext";
+import { NAV_LINKS as NAV_LINKS_DEFAULT, isActivePath } from "../data/siteLinks";
+import useServiceLinks from "../hooks/useServiceLinks";
+import { PHONES } from "../data/businessInfo";
+
+const DEFAULT_NAV_LINKS = NAV_LINKS_DEFAULT;
+const DEFAULT_HELPLINES = PHONES.map((p) => ({ href: p.href, display: p.label }));
+
+/* ── Motion (styles are unchanged — these only animate existing elements) ── */
+const EASE_OUT = [0.22, 1, 0.36, 1];
+const dropdownMotion = {
+  initial: { opacity: 0, y: -6, scale: 0.97 },
+  animate: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.18, ease: EASE_OUT } },
+  exit:    { opacity: 0, y: -4, scale: 0.98, transition: { duration: 0.12 } },
+};
+const drawerList = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.05, delayChildren: 0.12 } },
+};
+const drawerItem = {
+  hidden: { opacity: 0, x: 16 },
+  show: { opacity: 1, x: 0, transition: { duration: 0.35, ease: EASE_OUT } },
+};
+
+// ── User icon (shown before login) ───────────────────────────────────────────
+function UserIcon({ size = 18, color = "#111" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="8" r="3.4" stroke={color} strokeWidth="2" />
+      <path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6" stroke={color} strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export default function Header() {
+  const dispatch = useDispatch();
+  const currentPath = usePageContext().urlPathname || "/";
+  const SERVICE_SUBLINKS = useServiceLinks(); // all featured service pages for the "More" dropdown
+  const siteSettings = useSiteSettings();
+  const NAV_LINKS = siteSettings.getList("header", "nav", DEFAULT_NAV_LINKS);
+  const HELPLINES = siteSettings.getList("header", "phones", DEFAULT_HELPLINES);
+  const open = useSelector(selectMobileNavOpen);
+  const toast = useToast();
+
+  const [loggedIn, setLoggedIn]   = useState(false);
+  const [userName, setUserName]   = useState("");
+  const [dropdownOpen, setDropdown] = useState(false);
+  const [hoveredLink, setHoveredLink] = useState(null); // drives the gliding hover background
+
+  useEffect(() => {
+    const sync = () => {
+    const auth = isAuthenticated();
+    setLoggedIn(auth);
+    if (auth) {
+      // Try stored name first (instant), then fetch from /auth/me in background
+      const stored = getStoredUserName();
+      if (stored) setUserName(stored);
+      authApi.getMe()
+        .then((data) => {
+          const name = data?.name || data?.user?.name || stored || "";
+          if (name) {
+            setUserName(name);
+            import("../api/tokens").then(({ storeUserName }) => storeUserName(name));
+          }
+        })
+        .catch(() => { /* keep stored name */ });
+    }
+    };
+    sync();
+    // Signed in from the popup (e.g. on checkout) without a reload.
+    window.addEventListener(AUTH_CHANGED, sync);
+    return () => window.removeEventListener(AUTH_CHANGED, sync);
+  }, []);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (!dropdownOpen) return;
+    function close() { setDropdown(false); }
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
+  }, [dropdownOpen]);
+
+  async function handleLogout() {
+    await authApi.logout();
+    setLoggedIn(false);
+    setUserName("");
+    setDropdown(false);
+    navigate("/");
+  }
+
+  // First name only for greeting
+  const firstName = userName?.trim().split(" ")[0] || "";
+
+  return (
+    <LazyMotion features={domMax} strict>
+      <MotionConfig reducedMotion="user">
+        {/* ── Utility bar ─────────────────────────────────────────────── */}
+        <div className="ac-util-wrap">
+          <div className="ac-util-bar">
+            <span className="ac-util-loc" />
+
+            <div className="ac-util-hide">
+              <a href="/contact-us" className="ac-util-link">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <rect x="3" y="5" width="18" height="14" rx="2.5" stroke="currentColor" strokeWidth="2" />
+                  <path d="M4 7l8 6 8-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+                Support
+              </a>
+
+              <span className="ac-util-sep" aria-hidden />
+
+              <span className="ac-util-phones">
+                <span className="ac-util-phone-icon" aria-hidden>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+                    <path d="M6.6 10.8a13 13 0 006.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.5.6.6 0 1 .5 1 1V20c0 .6-.4 1-1 1A17 17 0 013 4c0-.6.5-1 1-1h3.4c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.5.1.4 0 .8-.3 1L6.6 10.8z" fill="currentColor" />
+                  </svg>
+                </span>
+                {HELPLINES.map((h, i) => (
+                  <React.Fragment key={h.href}>
+                    {i > 0 && <span className="ac-util-slash" aria-hidden>/</span>}
+                    <a href={h.href} className="ac-util-phone">{h.display}</a>
+                  </React.Fragment>
+                ))}
+              </span>
+
+              <span className="ac-util-badge">
+                <m.span
+                  className="ac-util-dot"
+                  animate={{ boxShadow: ["0 0 0 0 rgba(17,17,17,.55)", "0 0 0 5px rgba(17,17,17,0)", "0 0 0 0 rgba(17,17,17,.55)"] }}
+                  transition={{ duration: 1.8, repeat: Infinity, ease: "easeOut" }}
+                />
+                24/7 Assistance
+              </span>
+
+              <m.button
+                onClick={() => toast("App download coming soon!", "success")}
+                whileHover={{ y: -1 }}
+                whileTap={{ scale: 0.96 }}
+                transition={{ type: "spring", stiffness: 400, damping: 22 }}
+                className="ml-3 px-4 py-1.5 rounded-full bg-primary text-brand-black font-bold text-[12px] border-none cursor-pointer hover:!bg-[#FFB300] shadow-[0_2px_8px_rgba(255,213,79,.35)]"
+              >
+                Download App
+              </m.button>
+            </div>
+
+            {/* Mobile: the phone numbers are hidden, so keep one tap-to-call */}
+            <a href={HELPLINES[0].href} className="ac-util-callnow">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <path d="M6.6 10.8a13 13 0 006.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.5.6.6 0 1 .5 1 1V20c0 .6-.4 1-1 1A17 17 0 013 4c0-.6.5-1 1-1h3.4c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.5.1.4 0 .8-.3 1L6.6 10.8z" fill="currentColor" />
+              </svg>
+              Call 24/7
+            </a>
+          </div>
+        </div>
+
+        {/* ── Main nav ─────────────────────────────────────────────────── */}
+        <header className="sticky top-0 z-50 bg-white border-b border-black/5">
+          <div className="ac-nav-row">
+
+            {/* Logo */}
+            <m.a href="/" whileTap={{ scale: 0.97 }} className="ac-logo-link">
+              <img
+                src="/images/abhi-cabs-logo-new.svg"
+                alt="Abhi Cabs"
+                className="ac-logo-img"
+                style={{ height: 44, width: "auto", maxWidth: 180, objectFit: "contain", borderRadius: 0 }}
+              />
+            </m.a>
+
+            {/* Desktop nav links — flat service links + "More" dropdown for all service pages */}
+            <nav className="ac-nav-links" aria-label="Primary" onMouseLeave={() => setHoveredLink(null)}>
+              {NAV_LINKS.map((l) => {
+                const active = isActivePath(l.href, currentPath);
+                return (
+                  <a
+                    key={l.label}
+                    href={l.href}
+                    aria-current={active ? "page" : undefined}
+                    suppressHydrationWarning
+                    className={`relative px-2.5 py-2 font-medium text-[13.5px] rounded-lg whitespace-nowrap transition-colors duration-150 hover:bg-[#F7F7F7] hover:!text-brand-black ${
+                      active ? "text-brand-black font-bold bg-[#F7F7F7]" : "text-[#555]"
+                    }`}
+                  >
+                    {l.label}
+                  </a>
+                );
+              })}
+
+              {/* "More" dropdown — shows all service pages dynamically */}
+              {SERVICE_SUBLINKS.length > 0 && (
+                <div className="relative" onMouseEnter={() => setHoveredLink("__more")} onMouseLeave={() => setHoveredLink(null)}>
+                  <button
+                    type="button"
+                    onFocus={() => setHoveredLink("__more")}
+                    onBlur={() => setHoveredLink(null)}
+                    className={`relative px-2.5 py-2 font-medium text-[13.5px] rounded-lg hover:bg-[#F7F7F7] hover:!text-brand-black text-[#555] inline-flex items-center gap-1 whitespace-nowrap transition-colors duration-150`}
+                  >
+                    More
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="mt-px"><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                  </button>
+                  {hoveredLink === "__more" && (
+                    <div className="absolute left-0 top-full pt-2 z-50" style={{ minWidth: 240 }}>
+                      <div className="bg-white rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.12)] border border-[#EFEFEF] py-2 overflow-hidden max-h-[70vh] overflow-y-auto">
+                        <div className="px-4 py-2 text-[11px] font-bold text-[#9CA3AF] uppercase tracking-wider">All Services</div>
+                        {SERVICE_SUBLINKS.map((sl) => (
+                          <a key={sl.href} href={sl.href} className="block px-4 py-2.5 text-[13.5px] font-medium text-[#555] hover:bg-[#F7F7F7] hover:text-brand-black transition-colors">{sl.label}</a>
+                        ))}
+                        <div className="border-t border-[#F0F0F0] mt-1 pt-1">
+                          <a href="/services" className="block px-4 py-2.5 text-[13.5px] font-bold text-[#E6AC00] hover:bg-[#FFFBEB] transition-colors">View All Services →</a>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </nav>
+
+            {/* Desktop right actions */}
+            <div className="ac-nav-actions">
+              {loggedIn ? (
+                /* ── Logged in: Hi [Name] dropdown ── */
+                <div className="ac-user-menu">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setDropdown((v) => !v); }}
+                    aria-expanded={dropdownOpen}
+                    aria-haspopup="menu"
+                    className="inline-flex items-center gap-2 font-semibold text-[13.5px] text-brand-black hover:!text-[#B8860B] bg-none border-none cursor-pointer"
+                  >
+                    {/* Avatar circle */}
+                    <span className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-brand-black font-bold text-[13px] shrink-0">
+                      {firstName ? firstName[0].toUpperCase() : <UserIcon size={15} color="#111" />}
+                    </span>
+                    <span>Hi, {firstName || "there"}</span>
+                    {/* Chevron */}
+                    <m.svg
+                      width="12" height="12" viewBox="0 0 24 24" fill="none"
+                      animate={{ rotate: dropdownOpen ? 180 : 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                    </m.svg>
+                  </button>
+
+                  {/* Dropdown */}
+                  <AnimatePresence>
+                    {dropdownOpen && (
+                      <m.div
+                        key="user-menu"
+                        role="menu"
+                        {...dropdownMotion}
+                        style={{ transformOrigin: "top right" }}
+                        className="absolute right-0 mt-2 w-44 bg-white rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] border border-[#F0F0F0] overflow-hidden z-50"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <a
+                          href="/my-booking"
+                          role="menuitem"
+                          onClick={() => setDropdown(false)}
+                          className="flex items-center gap-2.5 px-4 py-3 text-[13.5px] font-semibold text-brand-black hover:!bg-[#FAFAFA]"
+                        >
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                            <rect x="3" y="4" width="18" height="17" rx="2.5" stroke="#111" strokeWidth="1.8" />
+                            <path d="M8 2v4M16 2v4M3 10h18" stroke="#111" strokeWidth="1.8" strokeLinecap="round" />
+                          </svg>
+                          My Bookings
+                        </a>
+                        <div className="h-px bg-[#F0F0F0]" />
+                        <a
+                          href="/support-tickets"
+                          role="menuitem"
+                          onClick={() => setDropdown(false)}
+                          className="flex items-center gap-2.5 px-4 py-3 text-[13.5px] font-semibold text-brand-black hover:!bg-[#FAFAFA]"
+                        >
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" stroke="#111" strokeWidth="1.8" strokeLinecap="round" />
+                            <rect x="9" y="2" width="6" height="4" rx="1.5" stroke="#111" strokeWidth="1.8" />
+                            <path d="M9 12h6M9 16h4" stroke="#111" strokeWidth="1.8" strokeLinecap="round" />
+                          </svg>
+                          My Tickets
+                        </a>
+                        <div className="h-px bg-[#F0F0F0]" />
+                        <button
+                          role="menuitem"
+                          onClick={handleLogout}
+                          className="w-full flex items-center gap-2.5 px-4 py-3 text-[13.5px] font-semibold text-[#E53E3E] hover:!bg-[#FFF5F5] border-none bg-white cursor-pointer"
+                        >
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                            <path d="M16 17l5-5-5-5M21 12H9M9 3H5a2 2 0 00-2 2v14a2 2 0 002 2h4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                          Logout
+                        </button>
+                      </m.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ) : (
+                /* ── Not logged in: Sign In ── */
+                <div className="ac-signin">
+                  <a
+                    href="/login"
+                    data-vike="false"
+                    onClick={headerSignInClick}
+                    className="inline-flex items-center gap-1.5 font-semibold text-[13.5px] text-brand-black hover:!text-[#B8860B]"
+                  >
+                    <UserIcon size={17} />
+                    Sign In
+                  </a>
+                </div>
+              )}
+
+              {/* Mobile hamburger — icon morphs between menu and close */}
+              <m.button
+                whileTap={{ scale: 0.92 }}
+                className="ac-hamburger w-[44px] h-[44px] rounded-[12px] border-[1.5px] border-[#E5E5E5] bg-white cursor-pointer touch-manipulation"
+                onClick={() => dispatch(setMobileNavOpen(!open))}
+                aria-label="Menu"
+                aria-expanded={open}
+              >
+                <AnimatePresence mode="wait" initial={false}>
+                  {open ? (
+                    <m.svg
+                      key="close"
+                      width="20" height="20" viewBox="0 0 24 24" fill="none"
+                      initial={{ rotate: -90, opacity: 0 }}
+                      animate={{ rotate: 0, opacity: 1 }}
+                      exit={{ rotate: 90, opacity: 0 }}
+                      transition={{ duration: 0.18 }}
+                    >
+                      <path d="M6 6l12 12M18 6L6 18" stroke="#111" strokeWidth="2.2" strokeLinecap="round" />
+                    </m.svg>
+                  ) : (
+                    <m.svg
+                      key="menu"
+                      width="20" height="20" viewBox="0 0 24 24" fill="none"
+                      initial={{ rotate: 90, opacity: 0 }}
+                      animate={{ rotate: 0, opacity: 1 }}
+                      exit={{ rotate: -90, opacity: 0 }}
+                      transition={{ duration: 0.18 }}
+                    >
+                      <path d="M4 7h16M4 12h16M4 17h16" stroke="#111" strokeWidth="2" strokeLinecap="round" />
+                    </m.svg>
+                  )}
+                </AnimatePresence>
+              </m.button>
+            </div>
+          </div>
+        </header>
+
+        {/* ── Mobile drawer ────────────────────────────────────────────── */}
+        {/* Same classes as before minus translate-x-* (framer now drives the slide).
+            Mounted only while open, so its links aren't tabbable when hidden. */}
+        <AnimatePresence>
+          {open && (
+            <m.div
+              key="mobile-drawer"
+              initial={{ x: "100%" }}
+              animate={{ x: 0, transition: { duration: 0.35, ease: EASE_OUT } }}
+              exit={{ x: "100%", transition: { duration: 0.25, ease: "easeIn" } }}
+              style={{ transition: "none" }} /* stop any CSS transform transition on .ac-drawer fighting framer */
+              className="ac-drawer ac-hide-desktop fixed inset-x-0 top-[92px] sm:top-[110px] bottom-0 bg-white z-40 overflow-y-auto px-5 py-4"
+            >
+              <m.div variants={drawerList} initial="hidden" animate="show">
+                {NAV_LINKS.map((l) => (
+                  <m.a key={l.label} variants={drawerItem} href={l.href} onClick={() => dispatch(setMobileNavOpen(false))} className="block py-3.5 text-[15px] font-semibold border-b border-[#F0F0F0] text-brand-black active:bg-[#F7F7F7] rounded-lg px-2 -mx-2">{l.label}</m.a>
+                ))}
+
+                {/* More Services — all service pages */}
+                {SERVICE_SUBLINKS.length > 0 && (
+                  <>
+                    <m.div variants={drawerItem} className="pt-4 pb-1 text-[11px] font-bold text-[#9CA3AF] uppercase tracking-wider">More Services</m.div>
+                    {SERVICE_SUBLINKS.map((sl) => (
+                      <m.a key={sl.href} variants={drawerItem} href={sl.href} onClick={() => dispatch(setMobileNavOpen(false))} className="block py-2.5 pl-3 text-[14px] font-medium border-b border-[#F0F0F0] text-[#555] active:bg-[#F7F7F7] rounded-lg px-2 -mx-2">{sl.label}</m.a>
+                    ))}
+                    <m.a variants={drawerItem} href="/services" onClick={() => dispatch(setMobileNavOpen(false))} className="block py-3 text-[14px] font-bold text-[#E6AC00] active:bg-[#FFFBEB] rounded-lg px-2 -mx-2">View All Services →</m.a>
+                  </>
+                )}
+
+                <m.div variants={drawerItem} className="flex flex-col gap-3 mt-6">
+                  {loggedIn ? (
+                    <>
+                      {/* Greeting row in mobile */}
+                      <div className="flex items-center gap-2.5 py-3 px-1">
+                        <span className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-brand-black font-bold text-[14px]">
+                          {firstName ? firstName[0].toUpperCase() : "U"}
+                        </span>
+                        <span className="font-semibold text-[15px]">Hi, {firstName || "there"}</span>
+                      </div>
+                      <a
+                        href="/my-booking"
+                        onClick={() => dispatch(setMobileNavOpen(false))}
+                        className="w-full py-3 rounded-xl border border-[#E5E5E5] font-semibold text-center text-brand-black"
+                      >
+                        My Bookings
+                      </a>
+                      <a
+                        href="/support-tickets"
+                        onClick={() => dispatch(setMobileNavOpen(false))}
+                        className="w-full py-3 rounded-xl border border-[#E5E5E5] font-semibold text-center text-brand-black"
+                      >
+                        My Tickets
+                      </a>
+                      <button
+                        onClick={() => { handleLogout(); dispatch(setMobileNavOpen(false)); }}
+                        className="w-full py-3 rounded-xl border border-[#FECACA] text-[#E53E3E] font-semibold bg-white cursor-pointer"
+                      >
+                        Logout
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <a
+                        href="/login"
+                        data-vike="false"
+                        onClick={(e) => { dispatch(setMobileNavOpen(false)); headerSignInClick(e); }}
+                        className="w-full py-3 rounded-xl border border-[#E5E5E5] font-semibold text-center inline-flex items-center justify-center gap-2"
+                      >
+                        <UserIcon size={16} />
+                        Sign In
+                      </a>
+                    </>
+                  )}
+                  <m.a
+                    href="/#booking"
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => dispatch(setMobileNavOpen(false))}
+                    className="w-full py-3.5 rounded-full text-center font-bold text-[15px] bg-primary text-brand-black shadow-[0_4px_16px_rgba(255,213,79,.4)]"
+                  >
+                    <EmojiIcon glyph="🚕" size={15} /> Book Now
+                  </m.a>
+                </m.div>
+              </m.div>
+            </m.div>
+          )}
+        </AnimatePresence>
+      </MotionConfig>
+    </LazyMotion>
+  );
+}
