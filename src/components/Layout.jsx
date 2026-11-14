@@ -39,6 +39,7 @@ function GlobalBookingStrip() {
     path.startsWith("/admin") ||
     path.startsWith("/offers") ||
     path.startsWith("/outstation") ||
+    path.startsWith("/cities/") ||
     (path.startsWith("/services/") && path !== "/services");
 
   if (pageAlreadyHasWidget) return null;
