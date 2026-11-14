@@ -195,7 +195,7 @@ export default function Page() {
             </p>
           </Reveal>
           <Reveal delay={0.1}>
-            <img src="/images/family.webp" alt="Family travelling with Abhi Cabs" loading="lazy" className="rounded-[22px] w-full aspect-[5/4] object-cover" style={{ boxShadow: "0 24px 60px rgba(0,0,0,0.14)" }} />
+            <img src="/images/who-we-are-fleet.png" alt="Abhi Cabs fleet — 4 Seater, 7 Seater, 14 Seater and 50 Seater vehicles" loading="lazy" className="rounded-[22px] w-full aspect-[5/4] object-cover" style={{ boxShadow: "0 24px 60px rgba(0,0,0,0.14)" }} />
           </Reveal>
         </div>
       </section>
