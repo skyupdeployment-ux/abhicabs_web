@@ -229,7 +229,7 @@ export default function Footer() {
                 <span className="text-[13px] text-white/45">{copyright}</span>
                 <span className="text-[12px] text-white/35">Designed &amp; Developed by SkyUp Digital Solutions</span>
               </div>
-              <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-2 pr-16 sm:pr-0">
                 {LEGAL_LINKS.map(([l, h]) => (
                   <a key={l} href={h} className="text-[13px] text-white/45 no-underline transition-colors duration-200 hover:text-[#FFD54F]">{l}</a>
                 ))}
@@ -241,7 +241,7 @@ export default function Footer() {
                   animate="rest"
                   whileHover="hover"
                   whileTap={{ scale: 0.88 }}
-                  className="ml-2 grid h-12 w-12 place-items-center rounded-full border-2 border-[#FFD54F] bg-[#FFD54F]/15 text-[#FFD54F] shadow-[0_0_18px_rgba(255,213,79,0.35),0_4px_14px_rgba(0,0,0,0.3)] backdrop-blur-sm transition-all duration-300 hover:bg-[#FFD54F] hover:text-[#141414] hover:shadow-[0_0_28px_rgba(255,213,79,0.5),0_6px_20px_rgba(0,0,0,0.3)]"
+                  className="ml-2 hidden sm:grid h-12 w-12 place-items-center rounded-full border-2 border-[#FFD54F] bg-[#FFD54F]/15 text-[#FFD54F] shadow-[0_0_18px_rgba(255,213,79,0.35),0_4px_14px_rgba(0,0,0,0.3)] backdrop-blur-sm transition-all duration-300 hover:bg-[#FFD54F] hover:text-[#141414] hover:shadow-[0_0_28px_rgba(255,213,79,0.5),0_6px_20px_rgba(0,0,0,0.3)]"
                 >
                   <m.svg
                     variants={{ rest: { y: 0 }, hover: { y: -3 } }}
