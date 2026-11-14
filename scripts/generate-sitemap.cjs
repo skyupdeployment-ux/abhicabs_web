@@ -41,6 +41,11 @@ const STATIC_URLS = [
   { path: "/cancellation",               priority: "0.3", changefreq: "yearly" },
   { path: "/privacy",                     priority: "0.3", changefreq: "yearly" },
   { path: "/terms",                       priority: "0.3", changefreq: "yearly" },
+  // City destination pages
+  { path: "/cities/mangaluru",            priority: "0.8", changefreq: "monthly" },
+  { path: "/cities/tirupati",             priority: "0.8", changefreq: "monthly" },
+  { path: "/cities/pune",                 priority: "0.8", changefreq: "monthly" },
+  { path: "/cities/visakhapatnam",        priority: "0.8", changefreq: "monthly" },
 ];
 
 const BUILT_IN_SERVICE_SLUGS = ["local", "airport-taxi", "one-way-outstation", "round-trip", "corporate"];
