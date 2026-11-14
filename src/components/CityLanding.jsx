@@ -7,6 +7,7 @@ import SectionHead from "./ui/SectionHead";
 import Card from "./ui/Card";
 import Reveal from "./ui/Reveal";
 import Button from "./ui/Button";
+import PageHero from "./ui/PageHero";
 import CTASection from "./CTASection";
 
 const GOLD = "#E6AC00";
@@ -37,17 +38,18 @@ export default function CityLanding({ cfg }) {
   return (
     <>
       {/* ═══ HERO ═══ */}
-      <section className="relative overflow-hidden" style={{ background: "linear-gradient(135deg,#0F172A,#1E293B)" }}>
-        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 50% at 20% 80%, rgba(230,172,0,0.08) 0%, transparent 60%)" }} />
-        <div className="relative max-w-[1264px] mx-auto px-6 py-[clamp(56px,7vw,92px)]">
-          <Reveal as="h1" style={{ fontSize: "clamp(28px,4.2vw,46px)", fontWeight: 700, color: "#fff", letterSpacing: "-0.03em", lineHeight: 1.15, maxWidth: 900 }}>
-            {c.hero.heading}
-          </Reveal>
-          <Reveal><p className="mt-3 font-bold text-[#FFD54F]" style={{ fontSize: "clamp(15px,1.6vw,18px)" }}>{c.hero.subheading}</p></Reveal>
-          <Reveal><p className="mt-4 text-white/65 text-[15px] leading-[1.85] max-w-[720px]">{c.hero.description}</p></Reveal>
-          <Reveal><Button href="#booking" size="lg" className="mt-8">{c.hero.ctaLabel}</Button></Reveal>
-        </div>
-      </section>
+      <PageHero
+        image="/images/dashboard-pov.jpg"
+        imageAlt={`Cab services in ${c.cityName}`}
+        breadcrumb={[["Home", "/"], ["Cities", "/cities"], [c.cityName, null]]}
+        title={c.hero.heading}
+        subtitle={c.hero.subheading}
+        description={c.hero.description}
+        actions={<>
+          <Button href="#booking" size="lg">{c.hero.ctaLabel}</Button>
+          <Button href="/services" variant="outlineInverse" size="lg">All Services</Button>
+        </>}
+      />
 
       {/* ═══ SERVICES ═══ */}
       <Section white>
@@ -244,9 +246,10 @@ export default function CityLanding({ cfg }) {
       <CTASection
         id={`${c.slug}-cta`}
         onBookMode={() => { if (typeof window !== "undefined") window.location.href = "#booking"; }}
-        line1={c.cta.heading}
-        line2=""
-        description={`${c.cta.subheading}. ${c.cta.description}`}
+        line1={`Book Your ${c.cityName} Cab`}
+        line2="Today."
+        subheading={c.cta.subheading}
+        description={c.cta.description}
         primaryLabel={c.cta.ctaLabel}
         secondary={false}
       />
