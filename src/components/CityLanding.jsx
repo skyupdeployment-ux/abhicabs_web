@@ -8,7 +8,6 @@ import Card from "./ui/Card";
 import Reveal from "./ui/Reveal";
 import Button from "./ui/Button";
 import PageHero from "./ui/PageHero";
-import CTASection from "./CTASection";
 import ServiceBooking from "./ServiceBooking";
 
 const GOLD = "#E6AC00";
@@ -243,16 +242,21 @@ export default function CityLanding({ cfg }) {
       </Section>
 
       {/* ═══ CTA ═══ */}
-      <CTASection
-        id={`${c.slug}-cta`}
-        onBookMode={() => { if (typeof window !== "undefined") window.location.href = "#booking"; }}
-        line1={`Book Your ${c.cityName} Cab`}
-        line2="Today."
-        subheading={c.cta.subheading}
-        description={c.cta.description}
-        primaryLabel={c.cta.ctaLabel}
-        secondary={false}
-      />
+      <section className="py-14 md:py-20">
+        <div className="max-w-[1264px] mx-auto px-6">
+          <div className="rounded-[22px] p-9 md:p-14 text-white grid grid-cols-1 lg:grid-cols-[1.3fr_1fr] gap-8 items-center" style={{ background: "linear-gradient(135deg,#1C1C1C,#0a0a0a)" }}>
+            <div>
+              <h2 className="text-[28px] md:text-[32px] font-bold tracking-tight leading-tight">{c.cta.heading}</h2>
+              {c.cta.subheading && <p className="mt-2 text-[#FFD54F] font-bold text-[16px]">{c.cta.subheading}</p>}
+              <p className="mt-3 text-white/75 text-[15px] leading-relaxed">{c.cta.description}</p>
+            </div>
+            <div className="flex flex-wrap lg:justify-end gap-3">
+              <Button href="#booking" variant="inverse" size="lg">{c.cta.ctaLabel}</Button>
+              <Button href="/contact-us" variant="outlineInverse" size="lg">Talk to Us</Button>
+            </div>
+          </div>
+        </div>
+      </section>
     </>
   );
 }
