@@ -8,7 +8,6 @@ import Accordion from "./ui/Accordion";
 import Button from "./ui/Button";
 import Card from "./ui/Card";
 import Reveal from "./ui/Reveal";
-import CTASection from "./CTASection";
 import ServiceDirectory from "./ServiceDirectory";
 import RelatedGuides from "./RelatedGuides";
 import SectionRenderer from "./SectionRenderer";
@@ -715,7 +714,26 @@ export default function ServiceLanding({ cfg }) {
     ),
 
     serviceDirectory: () => <ServiceDirectory exclude={cfg.slug} tone={getTone("serviceDirectory", "white")} />,
-    cta: () => <CTASection id={`${cfg.slug}-cta`} onBookMode={goBook} {...c.cta} subheading={c.cta.line1 === cfg.cta.line1 ? cfg.cta.subheading : undefined} secondary={false} />,
+    cta: () => (
+      <section className="py-14 md:py-20">
+        <div style={{ maxWidth: 1264, margin: "0 auto", padding: "0 24px" }}>
+          <div className="rounded-[22px] p-9 md:p-14 text-white grid grid-cols-1 lg:grid-cols-[1.3fr_1fr] gap-8 items-center" style={{ background: "linear-gradient(135deg,#1C1C1C,#0a0a0a)" }}>
+            <div>
+              <h2 className="text-[28px] md:text-[32px] font-bold tracking-tight leading-tight">
+                {c.cta.line1}{c.cta.line2 ? <> <span className="text-[#FFD54F]">{c.cta.line2}</span></> : null}
+              </h2>
+              {cfg.cta.subheading && c.cta.line1 === cfg.cta.line1 && <p className="mt-2 text-[#FFD54F] font-bold text-[16px]">{cfg.cta.subheading}</p>}
+              {c.cta.description && <p className="mt-3 text-white/75 text-[15px] leading-relaxed">{c.cta.description}</p>}
+            </div>
+            <div className="flex flex-wrap lg:justify-end gap-3">
+              <BookBtn variant="inverse" size="lg">{c.cta.primaryLabel}</BookBtn>
+              {!canBook && <Button href="/services" variant="outlineInverse" size="lg">All Services</Button>}
+              {canBook && <Button href="/contact-us" variant="outlineInverse" size="lg">Talk to Us</Button>}
+            </div>
+          </div>
+        </div>
+      </section>
+    ),
   };
 
   // ── Generic content block (layout id "block:<key>" → cfg.blocks[key]) ──
