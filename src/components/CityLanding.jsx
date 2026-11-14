@@ -9,6 +9,7 @@ import Reveal from "./ui/Reveal";
 import Button from "./ui/Button";
 import PageHero from "./ui/PageHero";
 import CTASection from "./CTASection";
+import ServiceBooking from "./ServiceBooking";
 
 const GOLD = "#E6AC00";
 const iconMap = { pin: MapPin, car: Car, plane: Plane, clock: Clock, users: Users, shield: ShieldCheck, headset: Headset, building: Building, compass: Compass, calendar: Calendar, route: RouteIcon, star: Star };
@@ -39,17 +40,16 @@ export default function CityLanding({ cfg }) {
     <>
       {/* ═══ HERO ═══ */}
       <PageHero
+        center
         image="/images/dashboard-pov.jpg"
         imageAlt={`Cab services in ${c.cityName}`}
         breadcrumb={[["Home", "/"], ["Cities", "/cities"], [c.cityName, null]]}
         title={c.hero.heading}
         subtitle={c.hero.subheading}
         description={c.hero.description}
-        actions={<>
-          <Button href="#booking" size="lg">{c.hero.ctaLabel}</Button>
-          <Button href="/services" variant="outlineInverse" size="lg">All Services</Button>
-        </>}
-      />
+      >
+        <ServiceBooking widgetKey="city-default" initialMode="one-way" />
+      </PageHero>
 
       {/* ═══ SERVICES ═══ */}
       <Section white>
